@@ -11,10 +11,13 @@
 <h3>MLB Scoreboard</h3>
 
 <form>
-	Year: <input type="text" name="yearInput" id="yearInput"><br/>
-    Month: <input type="text" name="monthInput" id="monthInput"><br/>
-    Day: <input type="text" name="dayInput" id="dayInput"><br/>
-    <button type="button" id="checkButton" onclick="getScoreboard(this.form)">Check Scores</button>
+	<table>
+		<tr><td>Year:</td><td><input type="text" name="yearInput" id="yearInput"></td></tr>
+	    <tr><td>Month:</td><td><input type="text" name="monthInput" id="monthInput"></td><tr/>
+	    <tr><td>Day: </td><td><input type="text" name="dayInput" id="dayInput"></td><tr/>
+	    <tr><td>Team: </td><td><input type="text" name="teamInput" id="teamInput"></td><tr/>
+	    <tr><td><button type="button" id="checkButton" onclick="getScoreboard(this.form)">Check Scores</button></td></tr>
+	</table>
 </form>
 <br/>
 <div id="scores"></div>
@@ -27,6 +30,7 @@ function getScoreboard(frm)
     year = frm.yearInput.value;
     month = frm.monthInput.value;
     day = frm.dayInput.value;
+    favTeam = frm.teamInput.value;
 
     // Month and day string values must be 2 chars long for the URL to work
     if(month.length < 2)
@@ -77,7 +81,7 @@ function parseDict(response)
 
     var gameCount = 0;
     output += "<table>";
-    bjInsert = "";
+    favInsert = "";
     otherInsert = "";
 
     output += "<tr><td><h3>Date: " + year + " / " + month + " / " + day + "</h3></td></tr>";
@@ -97,10 +101,10 @@ function parseDict(response)
 			awayScore = games.game[gameCount].linescore.r.away;
 		}	
 
-		// Parse Blue Jays games first
-    	if(homeTeam == "Blue Jays")
+		// Parse favorite team games first
+    	if(homeTeam == favTeam || awayTeam == favTeam)
     	{
-			bjInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+			favInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
 		}
 		else
 		{
@@ -109,7 +113,7 @@ function parseDict(response)
     	gameCount++;
     }
 
-    output += bjInsert + otherInsert;
+    output += favInsert + otherInsert;
     output += "</table>";
 
     // Actually write the output string to the document
