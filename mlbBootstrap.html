@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Major League Baseball - Scoreboard</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="jumbotron-narrow.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="../../assets/js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="header">
+        <h3 class="text-muted">Get MLB Results</h3>
+      </div>
+
+      <div class="jumbotron">
+        <h1>Major League Scoreboard</h1>
+        <p class="lead">Enter date information below to get MLB results from that day.  Optionally, provide a team you'd like to appear at the top of the report.</p>
+        <form>
+          <table>
+            <tr><td><h4>Year:</h4></td><td><input type="text" name="yearInput" id="yearInput"></td></tr>
+              <tr><td><h4>Month:</h4></td><td><input type="text" name="monthInput" id="monthInput"></td><tr/>
+              <tr><td><h4>Day: </h4></td><td><input type="text" name="dayInput" id="dayInput"></td><tr/>
+              <tr><td><h4>Favorite Team (optional): </h4></td><td><input type="text" name="teamInput" id="teamInput"></td><tr/>
+              <tr><td><button class="btn btn-lg btn-success" href="#" role="button" type="button" id="checkButton" onclick="getScoreboard(this.form)">Check Scores</button></td></tr>
+          </table>
+      </form>
+        <!--<p><a class="btn btn-lg btn-success" href="#" role="button">Sign up today</a></p>-->
+      </div>
+
+
+
+      
+      <div class="row-fluid">
+        <div class="span1 col-md-offset-5" id="scores">
+        </div>
+      </div>
+
+
+      <div class="footer">
+        <p>An open source project</p>
+      </div>
+
+    </div> <!-- /container -->
+
+
+    <script>
+    function getScoreboard(frm)
+    {
+        mlbXML = new XMLHttpRequest();
+
+        year = frm.yearInput.value;
+        month = frm.monthInput.value;
+        day = frm.dayInput.value;
+        favTeam = frm.teamInput.value;
+
+        // Form validation
+        if(year == null || year == "")
+        {
+            alert("Year must be filled out");
+            return false;
+        }
+        if(month == null || month == "")
+        {
+            alert("Month must be filled out");
+            return false;
+        }
+        if(day == null || day == "")
+        {
+            alert("Day must be filled out");
+            return false;
+        }
+
+        // Month and day string values must be 2 chars long for the URL to work
+        if(month.length < 2)
+        {
+          month = "0" + month;
+        }
+        if(day.length < 2)
+        {
+          day = "0" + day;
+        }
+
+        // URL components
+        scoreboardURL1 = "http://gd2.mlb.com/components/game/mlb"
+        scoreboardURLyear = "/year_" + year;
+        scoreboardURLmonth = "/month_" + month;
+        scoreboardURLday = "/day_" + day;
+        scoreboardURL2 = "/master_scoreboard.json";
+
+        scoreboardURL = scoreboardURL1 + scoreboardURLyear + scoreboardURLmonth + scoreboardURLday + scoreboardURL2;
+
+        mlbXML.onreadystatechange=function() 
+        {
+            if (mlbXML.readyState == 4 && mlbXML.status == 200) 
+            {
+                parseDict(mlbXML.responseText); 
+            }
+            else
+            {
+              parseDict(-1);
+            }
+        }
+
+        mlbXML.open("GET", scoreboardURL, true);
+        mlbXML.send();
+    }
+
+    function parseDict(response) 
+    {
+      if(response == -1)
+      {
+          document.getElementById("scores").innerHTML = "<b>If this message persists, than no MLB report from the API is available.</b><br/>";
+          exit();
+      }
+        jsonArr = JSON.parse(response);
+        output = "";
+
+        games = jsonArr.data.games;
+
+        var gameCount = 0;
+        favInsert = "";
+        otherInsert = "";
+
+        output += "<h3>Date: " + year + " / " + month + " / " + day + "</h3>";
+
+        for(property in games.game)
+        {
+          homeTeam = games.game[gameCount].home_team_name;
+          awayTeam = games.game[gameCount].away_team_name;
+
+          // Sometimes there isn't a linescore object
+          if(games.game[gameCount].linescore)
+          {
+            homeScore = games.game[gameCount].linescore.r.home;
+          }
+          if(games.game[gameCount].linescore)
+          {
+          awayScore = games.game[gameCount].linescore.r.away;
+        } 
+
+        if(homeTeam)
+        {
+          // Parse favorite team games first
+            if(homeTeam == favTeam || awayTeam == favTeam)
+            {
+            favInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+          }
+          else
+          {
+            otherInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+          }
+        }
+        else
+        {
+          output += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+        }
+          gameCount++;
+        }
+
+        if(homeTeam)
+        {
+            output += favInsert + otherInsert;
+        }
+
+        // Actually write the output string to the document
+        document.getElementById("scores").innerHTML = output;
+    }
+
+    function parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount)
+    {
+        retStr = "";
+          if(parseInt(homeScore) > parseInt(awayScore))
+          { 
+            retStr += "<p><b>Home: " + homeTeam + ", " + homeScore + "</b><br/>";
+            retStr += "Visitor: " + awayTeam + ", " + awayScore + "<br/>";
+          }
+          else if(parseInt(awayScore) > parseInt(homeScore))
+          {
+            retStr += "<p>Home: " + homeTeam + ", " + homeScore + "<br/>";
+            retStr += "<b>Visitor: " + awayTeam + ", " + awayScore + "</b><br/>";
+          }
+          else
+          {
+            retStr += "<p>Home: " + homeTeam + ", " + homeScore + "<br/>";
+            retStr += "Visitor: " + awayTeam + ", " + awayScore + "<br/>";
+          }
+          retStr += "Game status: " + games.game[gameCount].status.status + "</p><br/>";
+
+          return retStr;
+    }
+
+    </script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+  </body>
+</html>
