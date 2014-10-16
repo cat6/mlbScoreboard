@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MLB Scoreboard</title>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+<h3>MLB Scoreboard</h3>
+
+<form>
+	Year: <input type="text" name="yearInput" id="yearInput"><br/>
+    Month: <input type="text" name="monthInput" id="monthInput"><br/>
+    Day: <input type="text" name="dayInput" id="dayInput"><br/>
+    <button type="button" id="checkButton" onclick="getScoreboard(this.form)">Check Scores</button>
+</form>
+<br/>
+<div id="scores"></div>
+
+<script>
+function getScoreboard(frm)
+{
+    mlbXML = new XMLHttpRequest();
+
+    year = frm.yearInput.value;
+    month = frm.monthInput.value;
+    day = frm.dayInput.value;
+
+    // Month and day string values must be 2 chars long for the URL to work
+    if(month.length < 2)
+    {
+    	month = "0" + month;
+    }
+    if(day.length < 2)
+    {
+    	day = "0" + day;
+    }
+
+    // URL components
+    scoreboardURL1 = "http://gd2.mlb.com/components/game/mlb"
+    scoreboardURLyear = "/year_" + year;
+    scoreboardURLmonth = "/month_" + month;
+    scoreboardURLday = "/day_" + day;
+    scoreboardURL2 = "/master_scoreboard.json";
+
+    scoreboardURL = scoreboardURL1 + scoreboardURLyear + scoreboardURLmonth + scoreboardURLday + scoreboardURL2;
+
+    mlbXML.onreadystatechange=function() 
+    {
+        if (mlbXML.readyState == 4 && mlbXML.status == 200) 
+        {
+            parseDict(mlbXML.responseText); 
+        }
+        else
+        {
+        	parseDict(-1);
+        }
+    }
+
+    mlbXML.open("GET", scoreboardURL, true);
+    mlbXML.send();
+}
+
+function parseDict(response) 
+{
+	if(response == -1)
+	{
+   		document.getElementById("scores").innerHTML = "<b>If this message persists, than no MLB report from the API is available.</b><br/>";
+   		exit();
+	}
+    jsonArr = JSON.parse(response);
+    output = "";
+
+    games = jsonArr.data.games;
+
+    var gameCount = 0;
+    output += "<table>";
+    bjInsert = "";
+    otherInsert = "";
+
+    output += "<tr><td><h3>Date: " + year + " / " + month + " / " + day + "</h3></td></tr>";
+
+    for(property in games.game)
+    {
+    	homeTeam = games.game[gameCount].home_team_name;
+    	awayTeam = games.game[gameCount].away_team_name;
+
+    	// Sometimes there isn't a linescore object
+    	if(games.game[gameCount].linescore)
+    	{
+ 	    	homeScore = games.game[gameCount].linescore.r.home;
+ 	    }
+ 	    if(games.game[gameCount].linescore)
+ 	    {
+			awayScore = games.game[gameCount].linescore.r.away;
+		}	
+
+		// Parse Blue Jays games first
+    	if(homeTeam == "Blue Jays")
+    	{
+			bjInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+		}
+		else
+		{
+			otherInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+		}
+    	gameCount++;
+    }
+
+    output += bjInsert + otherInsert;
+    output += "</table>";
+
+    // Actually write the output string to the document
+    document.getElementById("scores").innerHTML = output;
+}
+
+function parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount)
+{
+		retStr = "";
+    	retStr += "<tr>";
+    	if(parseInt(homeScore) > parseInt(awayScore))
+    	{	
+	    	retStr += "<tr>";
+	    	retStr += "<td><b>Home: " + homeTeam + "</b></td>";
+	 
+	    	retStr += "<td>Visitor: " + awayTeam + "</td>";
+	    	retStr += "</tr>";
+   			retStr += "<td><b>" + homeScore + "</b></td>" + "<td>" + awayScore + "</td>";
+    	}
+    	if(parseInt(awayScore) > parseInt(homeScore))
+    	{
+	    	retStr += "<tr>";
+	    	retStr += "<td>Home: " + homeTeam + "</td>";
+	 
+	    	retStr += "<td><b>Visitor: " + awayTeam + "</b></td>";
+	    	retStr += "</tr>";
+   			retStr += "<td>" + homeScore + "</td>" + "<td><b>" + awayScore + "</b></td>";
+    	}
+    	retStr += "</tr>";
+
+    	retStr += "<tr><td>Game status: " + games.game[gameCount].status.status + "</td></tr>"; 
+
+    	return retStr;
+}
+
+</script>
+
+</body>
+</html>
+
+
