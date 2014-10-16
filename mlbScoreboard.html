@@ -32,6 +32,23 @@ function getScoreboard(frm)
     day = frm.dayInput.value;
     favTeam = frm.teamInput.value;
 
+    // Form validation
+    if(year == null || year == "")
+    {
+        alert("Year must be filled out");
+        return false;
+    }
+    if(month == null || month == "")
+    {
+        alert("Year must be filled out");
+        return false;
+    }
+    if(day == null || day == "")
+    {
+        alert("Year must be filled out");
+        return false;
+    }
+
     // Month and day string values must be 2 chars long for the URL to work
     if(month.length < 2)
     {
@@ -101,19 +118,30 @@ function parseDict(response)
 			awayScore = games.game[gameCount].linescore.r.away;
 		}	
 
-		// Parse favorite team games first
-    	if(homeTeam == favTeam || awayTeam == favTeam)
-    	{
-			favInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+		if(homeTeam)
+		{
+			// Parse favorite team games first
+	    	if(homeTeam == favTeam || awayTeam == favTeam)
+	    	{
+				favInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+			}
+			else
+			{
+				otherInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+			}
 		}
 		else
 		{
-			otherInsert += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
+			output += parseGame(jsonArr, homeTeam, awayTeam, homeScore, awayScore, gameCount);
 		}
     	gameCount++;
     }
 
-    output += favInsert + otherInsert;
+    if(homeTeam)
+    {
+        output += favInsert + otherInsert;
+    }
+
     output += "</table>";
 
     // Actually write the output string to the document
